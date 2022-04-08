@@ -1,6 +1,7 @@
 package geo
 
 import (
+	"fmt"
 	"image"
 	"image/color/palette"
 	"image/draw"
@@ -8,8 +9,10 @@ import (
 	"image/png"
 	"os"
 	"runtime"
+	"sort"
 
 	"github.com/fogleman/gg"
+	log "github.com/schollz/logger"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -28,7 +31,7 @@ type Point struct {
 	X, Y float64
 }
 
-func (l Lines) Simplify(percent float64) (l2 Lines) {
+func (l Lines) Copy() (l2 Lines) {
 	l2 = Lines{}
 	for _, line := range l.Lines {
 		line2 := Line{}
@@ -37,6 +40,68 @@ func (l Lines) Simplify(percent float64) (l2 Lines) {
 		}
 		l2.Lines = append(l2.Lines, line2)
 	}
+	return
+
+}
+
+// Simplify points by some percentage using the
+// https://en.wikipedia.org/wiki/Visvalingam%E2%80%93Whyatt_algorithm
+func (l Lines) Simplify(percent float64) (l2 Lines) {
+
+	pointsAvailable := 0.0
+	for _, line := range l.Lines {
+		if len(line.Points) > 2 {
+			pointsAvailable += float64(len(line.Points) - 2)
+		}
+	}
+
+	log.Tracef("found %2.0f available points to simplify", pointsAvailable)
+
+	type Area struct {
+		val    float64
+		linei  int
+		pointi int
+	}
+	areas := []Area{}
+	for linei, line := range l.Lines {
+		if len(line.Points) <= 2 {
+			continue
+		}
+		for i := 1; i < len(line.Points)-1; i++ {
+			x0 := line.Points[i-1].X
+			y0 := line.Points[i-1].Y
+			x1 := line.Points[i].X
+			y1 := line.Points[i].Y
+			x2 := line.Points[i+1].X
+			y2 := line.Points[i+1].Y
+			area := Area{
+				val:    0.5 * (x0*y1 + x1*y2 + x2*y0 - x0*y2 - x1*y0 - x2*y1),
+				linei:  linei,
+				pointi: i,
+			}
+			areas = append(areas, area)
+		}
+	}
+	sort.Slice(areas, func(i, j int) bool {
+		return areas[i].val < areas[j].val
+	})
+
+	removal := make(map[string]struct{})
+	for i := 0; i < int(percent*pointsAvailable); i++ {
+		removal[fmt.Sprintf("%d-%d", areas[i].linei, areas[i].pointi)] = struct{}{}
+	}
+
+	l2 = Lines{}
+	for linei, line := range l.Lines {
+		line2 := Line{}
+		for pointi, p := range line.Points {
+			if _, ok := removal[fmt.Sprintf("%d-%d", linei, pointi)]; !ok {
+				line2.Points = append(line2.Points, Point{p.X, p.Y})
+			}
+		}
+		l2.Lines = append(l2.Lines, line2)
+	}
+
 	return
 }
 
