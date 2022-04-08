@@ -1,4 +1,4 @@
-package models
+package geo
 
 import (
 	"fmt"

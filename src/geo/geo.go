@@ -1,4 +1,4 @@
-package models
+package geo
 
 import (
 	"image"
@@ -26,6 +26,18 @@ type Line struct {
 
 type Point struct {
 	X, Y float64
+}
+
+func (l Lines) Simplify(percent float64) (l2 Lines) {
+	l2 = Lines{}
+	for _, line := range l.Lines {
+		line2 := Line{}
+		for _, p := range line.Points {
+			line2.Points = append(line2.Points, Point{p.X, p.Y})
+		}
+		l2.Lines = append(l2.Lines, line2)
+	}
+	return
 }
 
 func (l *Lines) Add(line Line) {
