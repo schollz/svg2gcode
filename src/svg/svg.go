@@ -19,6 +19,8 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
+const MillimetersPerPixel = 0.26458333
+
 type Lines struct {
 	Lines  []Line
 	Height float64
@@ -35,7 +37,7 @@ type Point struct {
 }
 
 func ParseSVG(fname string) (lines Lines, err error) {
-	file, err := os.Open("1234.svg")
+	file, err := os.Open(fname)
 	if err != nil {
 		log.Error(err)
 		return
@@ -61,7 +63,7 @@ func ParseSVG(fname string) (lines Lines, err error) {
 			c2 := vg.Point{X: vg.Length(ins.CurvePoints.C2[0]), Y: vg.Length(ins.CurvePoints.C2[1])}
 			c3 := vg.Point{X: vg.Length(ins.CurvePoints.T[0]), Y: vg.Length(ins.CurvePoints.T[1])}
 			c := bezier.New(c0, c1, c2, c3)
-			for i := 0.0; i <= 1; i += 0.1 {
+			for i := 0.0; i <= 1; i += 0.25 {
 				cp := c.Point(i)
 				line.Add(float64(cp.X), float64(cp.Y))
 			}
@@ -81,7 +83,7 @@ func ParseSVG(fname string) (lines Lines, err error) {
 }
 
 func (l Lines) Copy() (l2 Lines) {
-	l2 = Lines{}
+	l2 = Lines{Bounds: l.Bounds, Height: l.Height, Width: l.Width}
 	for _, line := range l.Lines {
 		line2 := Line{}
 		for _, p := range line.Points {
@@ -90,13 +92,34 @@ func (l Lines) Copy() (l2 Lines) {
 		l2.Lines = append(l2.Lines, line2)
 	}
 	return
+}
 
+func (l Lines) ToGcode() (gcode string) {
+	gcode += "G91 ; Set coordinates to relative\n"
+	gcode += "G1 Z10 F1000 ; raise pen\n"
+	for _, line := range l.Lines {
+		gcode += "G90 ; Set coordinates to absolute\n"
+		for j, p := range line.Points {
+			gcode += fmt.Sprintf("G1 X%2.3f Y%2.3f F1000\n", p.X, p.Y)
+			if j == 0 {
+				gcode += "G91 ; Set coordinates to relative\n"
+				gcode += "G1 Z0 F1000 ; lower pen\n"
+				gcode += "G90 ; Set coordinates to absolute\n"
+			}
+		}
+		gcode += "G91 ; Set coordinates to relative\n"
+		gcode += "G1 Z10 F1000 ; raise pen\n"
+	}
+	return
 }
 
 // Simplify points by some percentage using the
 // https://en.wikipedia.org/wiki/Visvalingam%E2%80%93Whyatt_algorithm
 func (l Lines) Simplify(percent float64) (l2 Lines) {
-
+	if percent == 0 {
+		l2 = l.Copy()
+		return
+	}
 	pointsAvailable := 0.0
 	for _, line := range l.Lines {
 		if len(line.Points) > 2 {
@@ -169,12 +192,14 @@ func (l Lines) Draw(fname string) (err error) {
 	im := l.DrawStep(-1)
 	f, err := os.Create(fname)
 	if err != nil {
+		log.Error(err)
 		return
 	}
 	defer f.Close()
 
 	err = png.Encode(f, im)
 	if err != nil {
+		log.Error(err)
 		return
 	}
 	return
@@ -185,8 +210,8 @@ func (l Lines) DrawStep(step int, im0 ...image.Image) (im image.Image) {
 	if len(im0) > 0 {
 		dc = gg.NewContextForImage(im0[0])
 	} else {
-		dc = gg.NewContext(int(l.Bounds[0]+l.Bounds[2]), int(l.Bounds[1]+l.Bounds[3]))
-		dc.DrawRectangle(0, 0, l.Bounds[0]+l.Bounds[2], l.Bounds[1]+l.Bounds[3])
+		dc = gg.NewContext(int((l.Bounds[0]+l.Bounds[2])/MillimetersPerPixel), int((l.Bounds[1]+l.Bounds[3])/MillimetersPerPixel))
+		dc.DrawRectangle(0, 0, (l.Bounds[0]+l.Bounds[2])/MillimetersPerPixel, (l.Bounds[1]+l.Bounds[3])/MillimetersPerPixel)
 		dc.SetRGB(1, 1, 1)
 		dc.Fill()
 	}
@@ -196,7 +221,7 @@ func (l Lines) DrawStep(step int, im0 ...image.Image) (im image.Image) {
 			if j == 0 {
 				continue
 			}
-			dc.DrawLine(line.Points[j-1].X, line.Points[j-1].Y, point.X, point.Y)
+			dc.DrawLine(line.Points[j-1].X/MillimetersPerPixel, line.Points[j-1].Y/MillimetersPerPixel, point.X/MillimetersPerPixel, point.Y/MillimetersPerPixel)
 			if i == step && step > -1 {
 				break
 			}
