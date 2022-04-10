@@ -1,4 +1,4 @@
-package ga2
+package grad
 
 import (
 	"math"

@@ -1,4 +1,4 @@
-package ga2
+package grad
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 func TestGA(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	points := []Point{
-		Point{2, 4},
+		{2, 4},
 		Point{1, 1},
 		Point{1.1, 5},
 		Point{3, 1},

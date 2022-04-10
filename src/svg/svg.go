@@ -16,7 +16,7 @@ import (
 	svg_ "github.com/rustyoz/svg"
 	log "github.com/schollz/logger"
 	"github.com/schollz/progressbar/v3"
-	"github.com/schollz/svg2gcode/src/ga2"
+	"github.com/schollz/svg2gcode/src/grad"
 	"gonum.org/v1/plot/tools/bezier"
 	"gonum.org/v1/plot/vg"
 )
@@ -438,12 +438,12 @@ func (l Lines) RemoveSmall(fraction float64) (l2 Lines) {
 }
 
 func (l Lines) BestOrdering() (l2 Lines) {
-	points := []ga2.Point{}
+	points := []grad.Point{}
 	for _, line := range l.Lines {
-		points = append(points, ga2.Point{line.Points[0].X, line.Points[0].Y})
-		points = append(points, ga2.Point{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
+		points = append(points, grad.Point{line.Points[0].X, line.Points[0].Y})
+		points = append(points, grad.Point{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
 	}
-	path := ga2.FindBestPath(points)
+	path := grad.FindBestPath(points)
 	l2 = Lines{Bounds: l.Bounds, Height: l.Height, Width: l.Width}
 	for i := 0; i < len(path); i += 2 {
 		linei := int(math.Floor(float64(path[i]) / 2.0))
