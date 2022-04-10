@@ -15,7 +15,7 @@ import (
 	svg_ "github.com/rustyoz/svg"
 	log "github.com/schollz/logger"
 	"github.com/schollz/progressbar/v3"
-	"github.com/schollz/svg2gcode/src/ga"
+	"github.com/schollz/svg2gcode/src/ga2"
 	"gonum.org/v1/plot/tools/bezier"
 	"gonum.org/v1/plot/vg"
 )
@@ -409,24 +409,40 @@ func (l Lines) Normalize() (l2 Lines) {
 }
 
 func (l Lines) BestOrdering() (l2 Lines) {
-	l3 := l.Copy()
-	cities := []ga.City{}
-	trips := []ga.Trip{}
-	i := 0
-	for _, line := range l3.Lines {
-		cities = append(cities, ga.City{line.Points[0].X, line.Points[0].Y})
-		cities = append(cities, ga.City{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
-		trips = append(trips, ga.Trip{[]int{i, i + 1}})
-		i += 2
+	points := []ga2.Point{}
+	for _, line := range l.Lines {
+		points = append(points, ga2.Point{line.Points[0].X, line.Points[0].Y})
+		points = append(points, ga2.Point{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
 	}
-	w := ga.NewWorld(cities, trips)
-	j := w.FindBest()
+	path := ga2.FindBestPath(points)
+	fmt.Println(path)
+	l2 = Lines{Bounds: l.Bounds, Height: l.Height, Width: l.Width}
+	for i := 0; i < len(path); i += 2 {
+		linei := path[i] / 2
+		fmt.Println(linei)
+		line2 := Line{}
+		for _, p := range l.Lines[linei].Points {
+			line2.Points = append(line2.Points, Point{p.X, p.Y})
+		}
+		l2.Lines = append(l2.Lines, line2)
+	}
+	// cities := []ga.City{}
+	// trips := []ga.Trip{}
+	// i := 0
+	// for _, line := range l3.Lines {
+	// 	cities = append(cities, ga.City{line.Points[0].X, line.Points[0].Y})
+	// 	cities = append(cities, ga.City{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
+	// 	trips = append(trips, ga.Trip{[]int{i, i + 1}})
+	// 	i += 2
+	// }
+	// w := ga.NewWorld(cities, trips)
+	// j := w.FindBest()
 
-	l2 = l.Copy()
-	for i, trip := range j.Trips {
-		fmt.Println(trip)
-		l2.Lines[i] = l3.Lines[trip.Dests[0]/2]
-	}
+	// l2 = l.Copy()
+	// for i, trip := range j.Trips {
+	// 	fmt.Println(trip)
+	// 	l2.Lines[i] = l3.Lines[trip.Dests[0]/2]
+	// }
 	return
 }
 
