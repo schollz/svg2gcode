@@ -17,6 +17,8 @@ type FromSVGOptions struct {
 	Simplify    float64
 	Animate     bool
 	PNG         bool
+	MaxLenth    float64
+	Consolidate float64
 }
 
 func FromSVG(op FromSVGOptions) (err error) {
@@ -28,8 +30,11 @@ func FromSVG(op FromSVGOptions) (err error) {
 		return
 	}
 	lines = lines.BoundingBox(op.BoundingBox[0], op.BoundingBox[1], op.BoundingBox[2], op.BoundingBox[3])
-	lines = lines.Simplify(op.Simplify)
+	lines = lines.Consolidate(op.Consolidate)
+	lines = lines.RemoveSmall(op.MaxLenth)
 	lines = lines.BestOrdering()
+	lines = lines.Consolidate(op.Consolidate)
+	lines = lines.Simplify(op.Simplify)
 	if op.Animate {
 		log.Debugf("animating %s", op.FileOut+".gif")
 		lines.Animate(op.FileOut + ".gif")
@@ -39,7 +44,7 @@ func FromSVG(op FromSVGOptions) (err error) {
 		log.Debugf("drawing %s", op.FileOut+".png")
 		lines.Draw(op.FileOut + ".png")
 	}
-	err = ioutil.WriteFile(op.FileOut, []byte(lines.ToGcode()), 0644)
+	err = ioutil.WriteFile(op.FileOut+".gcode", []byte(lines.ToGcode()), 0644)
 	return
 }
 

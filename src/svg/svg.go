@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"image/gif"
 	"image/png"
+	"math"
 	"os"
 	"runtime"
 	"sort"
@@ -37,6 +38,10 @@ type Point struct {
 	X, Y float64
 }
 
+func Distance(p1, p2 Point) float64 {
+	return math.Sqrt(math.Pow(p1.X-p2.X, 2) + math.Pow(p1.Y-p2.Y, 2))
+}
+
 func ParseSVG(fname string) (lines Lines, err error) {
 	file, err := os.Open(fname)
 	if err != nil {
@@ -64,7 +69,7 @@ func ParseSVG(fname string) (lines Lines, err error) {
 			c2 := vg.Point{X: vg.Length(ins.CurvePoints.C2[0]), Y: vg.Length(ins.CurvePoints.C2[1])}
 			c3 := vg.Point{X: vg.Length(ins.CurvePoints.T[0]), Y: vg.Length(ins.CurvePoints.T[1])}
 			c := bezier.New(c0, c1, c2, c3)
-			for i := 0.0; i <= 1; i += 0.25 {
+			for i := 0.0; i <= 1; i += 0.1 {
 				cp := c.Point(i)
 				line.Add(float64(cp.X), float64(cp.Y))
 			}
@@ -408,6 +413,30 @@ func (l Lines) Normalize() (l2 Lines) {
 	return
 }
 
+func (l Line) PathLength() (pathLength float64) {
+	for i := 1; i < len(l.Points); i++ {
+		pathLength += Distance(l.Points[i-1], l.Points[i])
+	}
+	return
+}
+
+func (l Lines) RemoveSmall(fraction float64) (l2 Lines) {
+	dist := fraction * (l.Bounds[2] + l.Bounds[3]) / 2
+	l2 = Lines{Bounds: l.Bounds, Height: l.Height, Width: l.Width}
+	for _, line := range l.Lines {
+		if line.PathLength() < dist {
+			continue
+		}
+		line2 := Line{}
+		for _, p := range line.Points {
+			line2.Points = append(line2.Points, Point{p.X, p.Y})
+		}
+		l2.Lines = append(l2.Lines, line2)
+	}
+	log.Debugf("cleaned %d lines to %d lines", len(l.Lines), len(l2.Lines))
+	return
+}
+
 func (l Lines) BestOrdering() (l2 Lines) {
 	points := []ga2.Point{}
 	for _, line := range l.Lines {
@@ -415,34 +444,47 @@ func (l Lines) BestOrdering() (l2 Lines) {
 		points = append(points, ga2.Point{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
 	}
 	path := ga2.FindBestPath(points)
-	fmt.Println(path)
 	l2 = Lines{Bounds: l.Bounds, Height: l.Height, Width: l.Width}
 	for i := 0; i < len(path); i += 2 {
-		linei := path[i] / 2
-		fmt.Println(linei)
+		linei := int(math.Floor(float64(path[i]) / 2.0))
+		line := l.Lines[linei]
 		line2 := Line{}
-		for _, p := range l.Lines[linei].Points {
-			line2.Points = append(line2.Points, Point{p.X, p.Y})
+		if path[i] > path[i+1] {
+			// reverse points
+			for pi := len(line.Points) - 1; pi >= 0; pi-- {
+				p := line.Points[pi]
+				line2.Points = append(line2.Points, Point{p.X, p.Y})
+			}
+		} else {
+			for _, p := range line.Points {
+				line2.Points = append(line2.Points, Point{p.X, p.Y})
+			}
 		}
 		l2.Lines = append(l2.Lines, line2)
 	}
-	// cities := []ga.City{}
-	// trips := []ga.Trip{}
-	// i := 0
-	// for _, line := range l3.Lines {
-	// 	cities = append(cities, ga.City{line.Points[0].X, line.Points[0].Y})
-	// 	cities = append(cities, ga.City{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
-	// 	trips = append(trips, ga.Trip{[]int{i, i + 1}})
-	// 	i += 2
-	// }
-	// w := ga.NewWorld(cities, trips)
-	// j := w.FindBest()
+	return
+}
 
-	// l2 = l.Copy()
-	// for i, trip := range j.Trips {
-	// 	fmt.Println(trip)
-	// 	l2.Lines[i] = l3.Lines[trip.Dests[0]/2]
-	// }
+func (l Lines) Consolidate(joinFraction float64) (l2 Lines) {
+	l2 = Lines{Bounds: l.Bounds, Height: l.Height, Width: l.Width}
+	for _, line := range l.Lines {
+		line2 := Line{}
+		for _, p := range line.Points {
+			line2.Points = append(line2.Points, Point{p.X, p.Y})
+		}
+		if len(l2.Lines) > 0 {
+			lastPoint := l2.Lines[len(l2.Lines)-1].Points[len(l2.Lines[len(l2.Lines)-1].Points)-1]
+			point := line2.Points[0]
+			if Distance(point, lastPoint) < joinFraction*(l.Bounds[2]+l.Bounds[3])/2 {
+				l2.Lines[len(l2.Lines)-1].Points = append(l2.Lines[len(l2.Lines)-1].Points, line2.Points...)
+			} else {
+				l2.Lines = append(l2.Lines, line2)
+			}
+		} else {
+			l2.Lines = append(l2.Lines, line2)
+		}
+	}
+	log.Debugf("consolidated %d lines to %d lines", len(l.Lines), len(l2.Lines))
 	return
 }
 

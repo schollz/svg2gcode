@@ -24,9 +24,11 @@ func main() {
 					&cli.BoolFlag{Name: "png"},
 					&cli.StringFlag{Name: "in"},
 					&cli.StringFlag{Name: "out"},
-					&cli.Float64Flag{Name: "simplify", Usage: "in range 0-1"},
-					&cli.Float64Flag{Name: "x", Required: true, Usage: "in mm"},
-					&cli.Float64Flag{Name: "y", Required: true, Usage: "in mm"},
+					&cli.Float64Flag{Name: "simplify", Usage: "as %% (0-1)"},
+					&cli.Float64Flag{Name: "max-length", Usage: "as %% of size (0-1)"},
+					&cli.Float64Flag{Name: "consolidate", Usage: "consolidates lines %% of size (0-1)"},
+					&cli.Float64Flag{Name: "x", Usage: "in mm"},
+					&cli.Float64Flag{Name: "y", Usage: "in mm"},
 					&cli.Float64Flag{Name: "width", Required: true, Usage: "in mm"},
 					&cli.Float64Flag{Name: "height", Required: true, Usage: "in mm"},
 				},
@@ -41,6 +43,8 @@ func main() {
 						PNG:         c.Bool("png"),
 						BoundingBox: [4]float64{c.Float64("x"), c.Float64("y"), c.Float64("width"), c.Float64("height")},
 						Simplify:    c.Float64("simplify"),
+						MaxLenth:    c.Float64("max-length"),
+						Consolidate: c.Float64("consolidate"),
 					}
 					return gcode.FromSVG(ops)
 				},
