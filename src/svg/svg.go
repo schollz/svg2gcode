@@ -15,6 +15,7 @@ import (
 	svg_ "github.com/rustyoz/svg"
 	log "github.com/schollz/logger"
 	"github.com/schollz/progressbar/v3"
+	"github.com/schollz/svg2gcode/src/ga"
 	"gonum.org/v1/plot/tools/bezier"
 	"gonum.org/v1/plot/vg"
 )
@@ -232,7 +233,7 @@ func (l Lines) DrawStep(step int, im0 ...image.Image) (im image.Image) {
 		}
 	}
 	dc.SetRGB(255, 255, 255)
-	dc.SetLineWidth(4)
+	dc.SetLineWidth(2)
 	dc.Stroke()
 	im = dc.Image()
 	return
@@ -404,6 +405,28 @@ func (l Lines) Normalize() (l2 Lines) {
 	}
 	l2.Height /= biggestNum
 	l2.Width /= biggestNum
+	return
+}
+
+func (l Lines) BestOrdering() (l2 Lines) {
+	l3 := l.Copy()
+	cities := []ga.City{}
+	trips := []ga.Trip{}
+	i := 0
+	for _, line := range l3.Lines {
+		cities = append(cities, ga.City{line.Points[0].X, line.Points[0].Y})
+		cities = append(cities, ga.City{line.Points[len(line.Points)-1].X, line.Points[len(line.Points)-1].Y})
+		trips = append(trips, ga.Trip{[]int{i, i + 1}})
+		i += 2
+	}
+	w := ga.NewWorld(cities, trips)
+	j := w.FindBest()
+
+	l2 = l.Copy()
+	for i, trip := range j.Trips {
+		fmt.Println(trip)
+		l2.Lines[i] = l3.Lines[trip.Dests[0]/2]
+	}
 	return
 }
 

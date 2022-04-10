@@ -130,6 +130,16 @@ func (jo *Journey) Mutate(n int) {
 	jo.Eval()
 }
 
+func (jo *Journey) MutateTrips() {
+	for i0, trip := range jo.Trips {
+		// reverse array
+		for i, j := 0, len(trip.Dests)-1; i < j; i, j = i+1, j-1 {
+			jo.Trips[i0].Dests[i], jo.Trips[i0].Dests[j] = jo.Trips[i0].Dests[j], jo.Trips[i0].Dests[i]
+		}
+	}
+	jo.Eval()
+}
+
 // func (j0 Journey) Crossover(k Journey) Journey {
 // 	jnew := Journey{
 // 		Cities: j0.Cities,
@@ -159,6 +169,7 @@ func (jo *Journey) Mutate(n int) {
 // }
 
 type GA struct {
+	World        World
 	MutationRate float64
 	Population   int
 	Journies     []Journey
@@ -166,6 +177,7 @@ type GA struct {
 
 func NewGA(w World, population int, mutationRate float64) GA {
 	ga := GA{
+		World:        w,
 		MutationRate: mutationRate,
 		Population:   population,
 		Journies:     make([]Journey, population),
@@ -180,38 +192,45 @@ func (ga *GA) Iterate() {
 	sort.Slice(ga.Journies, func(i, j int) bool {
 		return ga.Journies[i].Length < ga.Journies[j].Length
 	})
-	journies := make([]Journey, ga.Population)
 	for i := 0; i < ga.Population; i++ {
+		if i == 0 {
+			continue
+		}
 		trips := make([]Trip, len(ga.Journies[0].Trips))
-		for j, trip := range ga.Journies[rand.Intn(10)].Trips {
+		for j, trip := range ga.Journies[0].Trips {
 			trips[j] = Trip{trip.Dests}
 		}
-		journies[i] = Journey{
+		ga.Journies[i] = Journey{
 			Trips:  trips,
 			Cities: ga.Journies[0].Cities,
 		}
 		//journies[i] = journies[i].Crossover(ga.Journies[rand.Intn(4)])
-		if i > 1 && rand.Float32() < float32(ga.MutationRate) {
-			journies[i].Mutate(rand.Intn(10) + 1)
+		if i < ga.Population/5 && rand.Float64() < ga.MutationRate {
+			ga.Journies[i].Mutate(rand.Intn(5) + 1)
+		} else {
+			ga.Journies[i] = ga.World.RandomJourney()
 		}
-		journies[i].Eval()
-	}
-	for i := 0; i < ga.Population; i++ {
-		ga.Journies[i] = journies[i]
+		if rand.Float64() < ga.MutationRate {
+			ga.Journies[i].MutateTrips()
+		}
+		ga.Journies[i].Eval()
 	}
 }
 
-func (w World) FindBest() Journey {
-	ga := NewGA(w, 200, 0.9)
-	last := 100000.0
+func (w World) FindBest() (best Journey) {
+	ga := NewGA(w, 300, 0.9)
+	lastBest := 100000.0
 	j := 0
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 30000; i++ {
 		ga.Iterate()
-		if ga.Journies[0].Length < last {
-			// ga.Journies[0].Plot(fmt.Sprintf("%06d.png", j))
+		if ga.Journies[0].Length < lastBest {
+			fmt.Println(ga.Journies[0].Length)
+			lastBest = ga.Journies[0].Length
+			best = ga.Journies[0]
+			ga.Journies[0].Plot(fmt.Sprintf("%06d.png", j))
+			ga = NewGA(w, 300, 0.9)
 			j++
 		}
-		last = ga.Journies[0].Length
 	}
 	_ = j
 	return ga.Journies[0]

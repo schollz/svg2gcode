@@ -29,6 +29,7 @@ func FromSVG(op FromSVGOptions) (err error) {
 	}
 	lines = lines.BoundingBox(op.BoundingBox[0], op.BoundingBox[1], op.BoundingBox[2], op.BoundingBox[3])
 	lines = lines.Simplify(op.Simplify)
+	lines = lines.BestOrdering()
 	if op.Animate {
 		log.Debugf("animating %s", op.FileOut+".gif")
 		lines.Animate(op.FileOut + ".gif")

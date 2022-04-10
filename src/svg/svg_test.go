@@ -21,8 +21,9 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	ls2 := lines.BoundingBox(0, 0, 300, 300)
+	ls2 := lines.BoundingBox(0, 0, 100, 100)
 	ls2 = ls2.Simplify(0.55)
+	ls2 = ls2.BestOrdering()
 	ls2.Animate("test.gif")
 	ls2.Draw("final.png")
 }
