@@ -17,7 +17,7 @@ type FromSVGOptions struct {
 	Simplify    float64
 	Animate     bool
 	PNG         bool
-	MaxLenth    float64
+	MinLength   float64
 	Consolidate float64
 }
 
@@ -32,7 +32,7 @@ func FromSVG(op FromSVGOptions) (err error) {
 	lines = lines.BoundingBox(op.BoundingBox[0], op.BoundingBox[1], op.BoundingBox[2], op.BoundingBox[3])
 	lines = lines.BestOrdering()
 	lines = lines.Consolidate(op.Consolidate)
-	lines = lines.RemoveSmall(op.MaxLenth)
+	lines = lines.RemoveSmall(op.MinLength)
 	lines = lines.BestOrdering()
 	lines = lines.Consolidate(op.Consolidate)
 	lines = lines.Simplify(op.Simplify)
