@@ -16,13 +16,14 @@ func FindBestPath(points []Point) (bestPath []int) {
 	bestPathLength := 100000000.0
 	currentTime := time.Now()
 	for tries := 0; tries < 10000000; tries++ {
-		if time.Since(currentTime) > time.Duration(1*time.Second) {
+		if time.Since(currentTime) > time.Duration(3*time.Second) {
 			break
 		}
 		for i := 0; i < len(points); i++ {
 			path := FindPath(points, i)
 			pathLength := PathLength(path, points)
 			if pathLength < bestPathLength {
+				currentTime = time.Now()
 				log.Debugf("best path: %+v: %2.3f", path, pathLength)
 				bestPathLength = pathLength
 				bestPath = path

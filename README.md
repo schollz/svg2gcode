@@ -28,3 +28,9 @@ git clone https://github.com/schollz/svg2gcode
 cd svg2gcode
 make camel.gcode
 ```
+
+## Other similar repos
+
+- https://github.com/mnk343/Single-Line-Portrait-Drawing
+- https://github.com/davekch/linerizer
+- https://github.com/javierbyte/pintr

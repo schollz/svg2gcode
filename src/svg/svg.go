@@ -305,7 +305,11 @@ func (l Lines) Animate(fname string) (err error) {
 	outGif := &gif.GIF{}
 	for i := 0; i < numJobs; i++ {
 		outGif.Image = append(outGif.Image, palettedImages[i])
-		outGif.Delay = append(outGif.Delay, 0)
+		if i < numJobs-1 {
+			outGif.Delay = append(outGif.Delay, 0)
+		} else {
+			outGif.Delay = append(outGif.Delay, 200)
+		}
 	}
 
 	f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE, 0600)
