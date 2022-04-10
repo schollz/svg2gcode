@@ -30,6 +30,7 @@ func FromSVG(op FromSVGOptions) (err error) {
 		return
 	}
 	lines = lines.BoundingBox(op.BoundingBox[0], op.BoundingBox[1], op.BoundingBox[2], op.BoundingBox[3])
+	lines = lines.BestOrdering()
 	lines = lines.Consolidate(op.Consolidate)
 	lines = lines.RemoveSmall(op.MaxLenth)
 	lines = lines.BestOrdering()

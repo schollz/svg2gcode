@@ -185,7 +185,7 @@ func (l Lines) Simplify(percent float64) (l2 Lines) {
 		}
 	}
 
-	log.Debugf("simplified %2.0f%%: %2.0f points -> %2.0f points", percent*100, pointsAvailable, pointsNow)
+	log.Debugf("simplified %2.3f%%: %2.0f points -> %2.0f points", percent*100, pointsAvailable, pointsNow)
 
 	return
 }
