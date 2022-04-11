@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	log "github.com/schollz/logger"
@@ -47,6 +48,23 @@ func main() {
 						Consolidate: c.Float64("consolidate"),
 					}
 					return gcode.FromSVG(ops)
+				},
+			}, {
+				Name:  "upload",
+				Usage: "upload gcode to a cnc machine or 3d printer",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{Name: "debug"},
+					&cli.StringFlag{Name: "in"},
+				},
+				Action: func(c *cli.Context) error {
+					if c.Bool("debug") {
+						log.SetLevel("debug")
+					}
+					instructions, err := ioutil.ReadFile(c.String("in"))
+					if err != nil {
+						return err
+					}
+					return gcode.Send(string(instructions))
 				},
 			},
 		},

@@ -1,8 +1,10 @@
 package gcode
 
 import (
+	"bytes"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	log "github.com/schollz/logger"
 	"github.com/schollz/svg2gcode/src/svg"
@@ -93,6 +95,25 @@ func Send(instructions string, portName0 ...string) (err error) {
 			log.Errorf("%s: %s", instruction, err.Error())
 			return
 		}
+		for {
+			time.Sleep(100 * time.Millisecond)
+			buf := make([]byte, 128)
+			var n int
+			n, err = s.Read(buf)
+			if err != nil {
+				log.Error(err)
+			}
+			log.Debugf("%q", buf[:n])
+			if bytes.Contains(buf[:n], []byte("ok")) {
+				break
+			}
+			if bytes.Contains(buf[:n], []byte("busy")) {
+				continue
+			}
+			break
+		}
+
 	}
+
 	return
 }

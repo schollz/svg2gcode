@@ -101,20 +101,18 @@ func (l Lines) Copy() (l2 Lines) {
 }
 
 func (l Lines) ToGcode() (gcode string) {
-	gcode += "G91 ; Set coordinates to relative\n"
-	gcode += "G1 Z10 F1000 ; raise pen\n"
 	for _, line := range l.Lines {
+		gcode += "G91 ; Set coordinates to relative\n"
+		gcode += "G1 Z10 F1000 ; raise pen\n"
 		gcode += "G90 ; Set coordinates to absolute\n"
 		for j, p := range line.Points {
 			gcode += fmt.Sprintf("G1 X%2.3f Y%2.3f F1000\n", p.X, p.Y)
 			if j == 0 {
 				gcode += "G91 ; Set coordinates to relative\n"
-				gcode += "G1 Z0 F1000 ; lower pen\n"
+				gcode += "G1 Z-10 F1000 ; lower pen\n"
 				gcode += "G90 ; Set coordinates to absolute\n"
 			}
 		}
-		gcode += "G91 ; Set coordinates to relative\n"
-		gcode += "G1 Z10 F1000 ; raise pen\n"
 	}
 	return
 }
