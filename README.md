@@ -1,6 +1,6 @@
 # svg2gcode
 
-Converts svg to gcode for pen plotters
+Converts svg to gcode for pen plotters. Read more about it on [my blog](https://schollz.com/blog/one-line/).
 
 
 ## Requirements (optional)
